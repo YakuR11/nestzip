@@ -21,7 +21,7 @@ The result is a normal `.zip` that Windows, macOS, 7-Zip, WinRAR and `unzip` ope
 One file, Python 3.8+, no dependencies.
 
 ```
-git clone https://github.com/<you>/nestzip.git
+git clone https://github.com/YakuR11/nestzip.git
 cd nestzip
 python nestzip.py --help
 ```
