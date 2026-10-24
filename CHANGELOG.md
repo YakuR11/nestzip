@@ -2,6 +2,13 @@
 
 Versions follow [semantic versioning](https://semver.org).
 
+## 1.3.0 - 2026-10-24
+
+- **A window**: `nestzip.exe` is now an app. Choose a folder, see whether it fits, pack it with a progress bar and the time left, and **Stop** to pause safely between two batches. `nestzip gui` opens it from the command line.
+- **Right-click menu**: one tick in the window adds "Pack with nestzip" to the right-click menu of folders in Explorer (current user only, no admin rights).
+- **`nestzip-cli.exe`** is the console version, for terminals and scripts.
+- Every release now tests both exes the way people start them, including a double-click, before publishing.
+
 ## 1.2.1 - 2026-10-24
 
 - **Double-click works**: started with no arguments, as when `nestzip.exe` is double-clicked, nestzip asks for the folder (drag it into the window), shows whether it fits, asks before packing, and waits for Enter before closing. It used to print a usage error and nothing else.

@@ -29,23 +29,37 @@ jobs:
         with:
           python-version: "3.13"
       - run: python -m pip install pyinstaller==6.22.3
-      - run: pyinstaller --onefile --console --name nestzip nestzip.py
-      - name: Smoke test the exe
+      # nestzip.exe is the window (no console); nestzip-cli.exe is for terminals and scripts
+      - run: pyinstaller --onefile --windowed --name nestzip nestzip.py
+      - run: pyinstaller --onefile --console --name nestzip-cli nestzip.py
+      - name: Smoke test both exes, the way people start them
         shell: pwsh
         run: |
-          dist\nestzip.exe --version
-          New-Item -ItemType Directory smoke\Docs | Out-Null
-          Set-Content smoke\Docs\a.txt "hello"
-          dist\nestzip.exe pack smoke\Docs -y --keep-free 0
-          if ((Test-Path smoke\Docs) -or -not (Test-Path smoke\Docs.zip)) { exit 1 }
-      # Lets anyone check the exe was built here, from this commit: gh attestation verify nestzip.exe --repo YakuR11/nestzip
+          function Make($dir) { New-Item -ItemType Directory "$dir\sub" | Out-Null; Set-Content "$dir\a.txt" "hello"; Set-Content "$dir\sub\b.txt" "world" }
+          function Packed($dir) { if ((Test-Path $dir) -or -not (Test-Path "$dir.zip")) { throw "$dir was not packed" } }
+
+          dist\nestzip-cli.exe --version
+          Make smoke\Args; dist\nestzip-cli.exe pack smoke\Args -y --keep-free 0; Packed smoke\Args
+
+          # Double-clicked console exe: no arguments, the folder is typed (or dragged) in, then y, then Enter
+          Make smoke\Click; "$PWD\smoke\Click`ny`n`n" | dist\nestzip-cli.exe; Packed smoke\Click
+
+          # The window exe runs commands too, silently
+          Make smoke\Window; Start-Process dist\nestzip.exe -ArgumentList "pack", "smoke\Window", "-y", "--keep-free", "0" -Wait; Packed smoke\Window
+
+          # Double-clicked window exe: it must open and stay open
+          $window = Start-Process dist\nestzip.exe -PassThru
+          Start-Sleep -Seconds 8
+          if ($window.HasExited) { throw "nestzip.exe closed right away (exit code $($window.ExitCode))" }
+          Stop-Process -Id $window.Id
+      # Lets anyone check an exe was built here, from this commit: gh attestation verify nestzip.exe --repo YakuR11/nestzip
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/nestzip.exe
+          subject-path: dist/*.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-exe
-          path: dist/nestzip.exe
+          path: dist/*.exe
 
   python-package:
     needs: tests

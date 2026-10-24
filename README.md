@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe"><strong>Download nestzip.exe for Windows</strong></a> (no Python needed)
+  <a href="https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe"><strong>Download nestzip.exe for Windows</strong></a> (an app, no Python needed)
   &nbsp;·&nbsp; <code>pipx install git+https://github.com/YakuR11/nestzip</code> on any system
 </p>
 
@@ -33,16 +33,23 @@ It's the reverse of [HatchZip](https://github.com/xevrion/hatchzip), which does 
 
 ## Quick start
 
-**Windows, no Python needed:** download [`nestzip.exe`](https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe) and double-click it. Drag the folder to pack into the window and press Enter: nestzip shows whether it fits and asks before changing anything.
+**Windows, no Python needed:** download [`nestzip.exe`](https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe) and double-click it. Choose the folder, check that it fits, click **Pack**: the progress bar shows how long is left, and **Stop** pauses safely so you can continue later.
 
-From a terminal, the exe takes the same commands as below:
+<p align="center">
+  <img src="docs/gui-running.png" width="400" alt="The nestzip window while packing: 22% done, about 33 seconds left, with a Stop button">
+  <img src="docs/gui-done.png" width="400" alt="The nestzip window when finished: Done, N:\Backups.zip, 1.1 GB in 41.5 seconds">
+</p>
+
+Tick **Add "Pack with nestzip" to the right-click menu** once, and you can right-click any folder in Explorer to pack it (on Windows 11, under **Show more options**).
+
+For terminals and scripts, download [`nestzip-cli.exe`](https://github.com/YakuR11/nestzip/releases/latest/download/nestzip-cli.exe), which takes the same commands as below:
 
 ```
-.\nestzip.exe check D:\Backups     # will it fit? changes nothing
-.\nestzip.exe pack D:\Backups      # -> D:\Backups.zip, D:\Backups is gone at the end
+.\nestzip-cli.exe check D:\Backups     # will it fit? changes nothing
+.\nestzip-cli.exe pack D:\Backups      # -> D:\Backups.zip, D:\Backups is gone at the end
 ```
 
-The exe isn't code-signed yet, so Windows may show "Windows protected your PC": choose **More info**, then **Run anyway**. Every exe is built by GitHub Actions from the tagged source, and you can check that with `gh attestation verify nestzip.exe --repo YakuR11/nestzip`.
+The exes aren't code-signed yet, so Windows may show "Windows protected your PC": choose **More info**, then **Run anyway**. Every exe is built by GitHub Actions from the tagged source and tested before release, and you can check where it comes from with `gh attestation verify nestzip.exe --repo YakuR11/nestzip`.
 
 **Any system with Python 3.10 or newer** (one file, no dependencies):
 
@@ -52,7 +59,7 @@ nestzip check MyFolder
 nestzip pack MyFolder
 ```
 
-No pipx? Clone the repo and run `python nestzip.py` instead of `nestzip`. What changed in each version is in the [CHANGELOG](CHANGELOG.md).
+`nestzip gui` opens the same window. No pipx? Clone the repo and run `python nestzip.py` instead of `nestzip`. What changed in each version is in the [CHANGELOG](CHANGELOG.md).
 
 ## Usage
 
@@ -150,7 +157,7 @@ C'est mon premier projet GitHub. L'idée vient de [HatchZip](https://github.com/
 python -m unittest -v
 ```
 
-Covers a full pack, a power cut in the middle of a batch, kills while deleting and right after starting, a file edited between two runs, a disk that's too full, a damaged sidecar, two runs at once, the source folder moved away mid-run, links and junctions pointing outside the folder, links planted next to the archive, files dated 1970, and `--exclude`. CI runs them on Windows, macOS and Linux.
+Covers a full pack, a power cut in the middle of a batch, kills while deleting and right after starting, a file edited between two runs, a disk that's too full, a damaged sidecar, two runs at once, the source folder moved away mid-run, links and junctions pointing outside the folder, links planted next to the archive, files dated 1970, `--exclude`, a double-click start, the window's Stop button and the right-click menu. CI runs them on Windows, macOS and Linux.
 
 ## Contributing
 

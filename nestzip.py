@@ -16,6 +16,7 @@ import shutil
 import stat
 import struct
 import sys
+import threading
 import time
 import zipfile
 import zlib
@@ -26,7 +27,7 @@ if os.name == "nt":
 else:
     import fcntl
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 
 SIDECAR = ".nestzip"  # next to the archive: a copy of its last known-good central directory
 SIDECAR_HEADER = struct.Struct("<8sQI")  # magic, where the central directory starts, CRC-32 of the copy
@@ -40,6 +41,9 @@ SIZE_UNITS = {"": 1, "K": 1 << 10, "M": 1 << 20, "G": 1 << 30, "T": 1 << 40}
 
 EXIT_NO_SPACE = 3
 EXIT_PAUSED = 130
+
+STOP = threading.Event()  # set by the window's Stop button; checked between batches, where stopping is always safe
+MENU_KEY = r"Software\Classes\Directory\shell\nestzip"  # Explorer's right-click menu for folders, current user only
 
 
 class Item(NamedTuple):
@@ -413,6 +417,8 @@ def parse_args(argv):
         )
         if name == "pack":
             cmd.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
+    window = commands.add_parser("gui", help="open the nestzip window", description="open the nestzip window")
+    window.add_argument("folder", nargs="?", help="folder to check right away")
     return parser.parse_args(argv)
 
 
@@ -497,6 +503,8 @@ def run(args, folder, real_folder, archive):
         done += size
         elapsed = time.monotonic() - started
         print(f"  [{i}/{len(todo)}] packed {len(batch)} items, {human(size)} freed{progress(done, total, elapsed)}")
+        if STOP.is_set() and i < len(todo):
+            raise KeyboardInterrupt
 
     for path in reversed(folders):  # children before their parents
         with contextlib.suppress(OSError):
@@ -523,12 +531,232 @@ def interactive():
         input("\nPress Enter to close.")  # a double-clicked window would vanish before it could be read
 
 
+def menu_command():
+    """What the right-click menu runs: this exe, or this script with the console-less pythonw."""
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}" gui "%1"'
+    pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+    return f'"{pythonw if os.path.exists(pythonw) else sys.executable}" "{os.path.abspath(__file__)}" gui "%1"'
+
+
+def menu_installed(key_path=MENU_KEY):
+    import winreg
+
+    try:
+        winreg.CloseKey(winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path))
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def set_menu(enabled, key_path=MENU_KEY):
+    """Add or remove "Pack with nestzip" in Explorer's right-click menu for folders (Windows, current user)."""
+    import winreg
+
+    if enabled:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValueEx(key, None, 0, winreg.REG_SZ, "Pack with nestzip")
+            if getattr(sys, "frozen", False):
+                winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, sys.executable)
+            with winreg.CreateKey(key, "command") as command:
+                winreg.SetValueEx(command, None, 0, winreg.REG_SZ, menu_command())
+    else:
+        for path in (key_path + r"\command", key_path):
+            with contextlib.suppress(FileNotFoundError):
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, path)
+
+
+def gui(folder=None):
+    """A window for people who don't live in a terminal. It runs the same main() as the command line."""
+    import io
+    import queue
+    import subprocess
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+
+    events = queue.Queue()  # the worker thread never touches the window: it sends lines and its exit code here
+    state = {"folder": None, "running": False, "closing": False}
+
+    class ToWindow(io.TextIOBase):
+        def write(self, text):
+            events.put(("text", text))
+            return len(text)
+
+    def work(argv):
+        sys.stdout = sys.stderr = ToWindow()
+        try:
+            main(argv)
+            code = 0
+        except SystemExit as stop:
+            code = stop.code
+        except Exception as error:  # a bug: show it instead of failing silently in a window
+            code = f"nestzip: unexpected error: {error!r}"
+        events.put(("exit", code))
+
+    def start(argv, running_text):
+        STOP.clear()
+        state["running"] = True
+        log.configure(state="normal")
+        log.delete("1.0", "end")
+        log.configure(state="disabled")
+        status.configure(text=running_text, foreground="")
+        for button in (choose, pack_button, show_button):
+            button.configure(state="disabled")
+        threading.Thread(target=work, args=(argv,), daemon=True).start()
+
+    def options():
+        return ["--store"] if store.get() else []
+
+    def check():
+        if state["folder"] and not state["running"]:
+            bar.configure(value=0)
+            start(["check", state["folder"], *options()], "Checking the folder and the free space…")
+
+    def pick():
+        chosen = filedialog.askdirectory(title="Choose the folder to pack")
+        if chosen:
+            state["folder"] = os.path.normpath(chosen)
+            folder_label.configure(text=state["folder"], foreground="")
+            check()
+
+    def pack():
+        name = os.path.basename(state["folder"])
+        if messagebox.askyesno(
+            "Pack and delete the originals?",
+            f"{name} will be packed into {name}.zip, and each original deleted once it is safely in the archive.\n\n"
+            "You can stop at any moment and continue later.",
+        ):
+            stop_button.configure(state="normal")
+            start(["pack", state["folder"], "-y", *options()], "Packing…")
+
+    def stop():
+        STOP.set()
+        stop_button.configure(state="disabled")
+        status.configure(text="Stopping after the current batch…")
+
+    def show():
+        archive_dir = os.path.dirname(state["folder"])
+        if hasattr(os, "startfile"):
+            os.startfile(archive_dir)
+        else:
+            subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", archive_dir])
+
+    def finished(code, text):
+        state["running"] = False
+        stop_button.configure(state="disabled")
+        choose.configure(state="normal")
+        if isinstance(code, str):
+            events.put(("text", code + "\n"))
+        if state["closing"]:
+            root.destroy()
+        elif "Done:" in text:
+            bar.configure(value=100)
+            status.configure(text=text[text.rindex("Done:"):].strip(), foreground="green")
+            show_button.configure(state="normal")
+        elif code == 0:
+            pack_button.configure(state="normal")
+            status.configure(text="It fits. Nothing has been changed yet.", foreground="green")
+        elif code == EXIT_NO_SPACE:
+            status.configure(text="Not enough free space: free some space or choose another disk.", foreground="red")
+        elif code == EXIT_PAUSED:
+            status.configure(text="Stopped safely. Choose the same folder again to continue.", foreground="")
+        else:
+            status.configure(text="Stopped: see the message above. Nothing unsafe was deleted.", foreground="red")
+
+    output = []
+
+    def pump():
+        while not events.empty():
+            kind, value = events.get()
+            if kind == "text":
+                output.append(value)
+                log.configure(state="normal")
+                log.insert("end", value)
+                log.see("end")
+                log.configure(state="disabled")
+                if match := re.search(r"(\d+)% done, about (.+?) left", value):
+                    bar.configure(value=int(match[1]))
+                    status.configure(text=f"{match[1]}% done, about {match[2]} left")
+            else:
+                finished(value, "".join(output))
+                output.clear()
+        root.after(100, pump)
+
+    def close():
+        if not state["running"]:
+            root.destroy()
+        elif messagebox.askyesno("Stop packing?", "nestzip will stop after the current batch. You can continue later."):
+            state["closing"] = True
+            stop()
+
+    root = tk.Tk()
+    root.title(f"nestzip {__version__}")
+    root.geometry("680x500")
+    root.minsize(560, 420)
+    root.protocol("WM_DELETE_WINDOW", close)
+    frame = ttk.Frame(root, padding=16)
+    frame.pack(fill="both", expand=True)
+    ttk.Label(frame, text="Zip a folder that doesn't fit twice on your disk", font=("Segoe UI", 14, "bold")).pack(anchor="w")
+    ttk.Label(
+        frame, wraplength=640,
+        text="Each file is deleted once it is safely in the archive, so you only need room for one batch. "
+        "You can stop at any moment and continue later.",
+    ).pack(anchor="w", pady=(2, 12))
+    row = ttk.Frame(frame)
+    row.pack(fill="x")
+    choose = ttk.Button(row, text="Choose a folder…", command=pick)
+    choose.pack(side="left")
+    folder_label = ttk.Label(row, text="No folder chosen yet", foreground="gray")
+    folder_label.pack(side="left", padx=10)
+    store = tk.BooleanVar()
+    ttk.Checkbutton(frame, text="No compression (much faster for photos and videos)", variable=store, command=check).pack(
+        anchor="w", pady=(10, 0)
+    )
+    if os.name == "nt":
+        menu = tk.BooleanVar(value=menu_installed())
+
+        def toggle_menu():
+            try:
+                set_menu(menu.get())
+            except OSError as error:
+                menu.set(menu_installed())
+                messagebox.showerror("nestzip", f"Couldn't change the right-click menu: {error}")
+
+        ttk.Checkbutton(
+            frame, text='Add "Pack with nestzip" to the right-click menu of folders', variable=menu, command=toggle_menu
+        ).pack(anchor="w", pady=(4, 0))
+    log = tk.Text(frame, height=9, font=("Consolas", 9), state="disabled", wrap="word")
+    log.pack(fill="both", expand=True, pady=(12, 0))
+    bar = ttk.Progressbar(frame, maximum=100)
+    bar.pack(fill="x", pady=(12, 4))
+    status = ttk.Label(frame, text="Choose a folder to see whether it fits.")
+    status.pack(anchor="w")
+    buttons = ttk.Frame(frame)
+    buttons.pack(fill="x", pady=(10, 0))
+    pack_button = ttk.Button(buttons, text="Pack and delete the originals", command=pack, state="disabled")
+    pack_button.pack(side="left")
+    stop_button = ttk.Button(buttons, text="Stop", command=stop, state="disabled")
+    stop_button.pack(side="left", padx=8)
+    show_button = ttk.Button(buttons, text="Show the archive", command=show, state="disabled")
+    show_button.pack(side="right")
+
+    if folder:
+        state["folder"] = os.path.normpath(os.path.abspath(folder))
+        folder_label.configure(text=state["folder"], foreground="")
+        root.after(200, check)
+    root.after(100, pump)
+    root.mainloop()
+
+
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")  # a file name the console can't show must not stop a run
-    if argv is None and len(sys.argv) == 1 and sys.stdin and sys.stdin.isatty():
-        return interactive()
+    if argv is None and len(sys.argv) == 1:
+        # Double-clicked: the windowed exe has no console at all, the console one asks in the console.
+        return gui() if sys.stdout is None else interactive()
     args = parse_args(argv)
+    if args.cmd == "gui":
+        return gui(args.folder)
     folder, real_folder, archive = resolve_paths(args)
     try:
         with single_instance(archive + SIDECAR + ".lock"):

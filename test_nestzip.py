@@ -50,6 +50,7 @@ class NestzipTest(unittest.TestCase):
             self.addCleanup(quiet.stop)
 
     def tearDown(self):
+        nestzip.STOP.clear()
         self.tmp.cleanup()
 
     def pack(self, *extra):
@@ -128,6 +129,35 @@ class NestzipTest(unittest.TestCase):
         with mock.patch("builtins.input", lambda prompt="": next(answers)):
             nestzip.interactive()
         self.assertEqual(os.listdir(self.tmp.name), ["data"])
+
+    def test_stop_button_stops_between_batches(self):
+        """The window's Stop button: the run ends after a whole batch, and resumes like any pause."""
+        real = nestzip.commit
+
+        def commit_then_press_stop(*args):
+            real(*args)
+            nestzip.STOP.set()
+
+        with mock.patch.object(nestzip, "commit", commit_then_press_stop):
+            self.assert_exits(nestzip.EXIT_PAUSED)
+        with zipfile.ZipFile(self.arc) as z:
+            self.assertIsNone(z.testzip(), "the archive must be valid when stopped")
+        nestzip.STOP.clear()
+        self.pack()
+        self.assert_finished()
+
+    @unittest.skipUnless(os.name == "nt", "the right-click menu is a Windows feature")
+    def test_right_click_menu(self):
+        key = r"Software\nestzip-test"  # directly under Software, so removing it leaves nothing behind
+        self.addCleanup(nestzip.set_menu, False, key)
+        nestzip.set_menu(True, key)
+        self.assertTrue(nestzip.menu_installed(key))
+        import winreg
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key + r"\command") as command:
+            self.assertTrue(winreg.QueryValue(command, None).endswith(' gui "%1"'))
+        nestzip.set_menu(False, key)
+        self.assertFalse(nestzip.menu_installed(key))
 
     def test_progress_and_duration(self):
         self.assertEqual(nestzip.duration(12.44), "12.4 s")
