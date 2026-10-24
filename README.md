@@ -136,7 +136,7 @@ Covers a full pack, a power cut in the middle of a batch, kills while deleting a
 
 ## Contributing
 
-Bug reports and pull requests are welcome. If you find a way to make nestzip delete something it shouldn't, please report it privately: see [SECURITY.md](SECURITY.md).
+Bug reports and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). If you find a way to make nestzip delete something it shouldn't, please report it privately: see [SECURITY.md](SECURITY.md).
 
 If nestzip got you out of a full-disk situation, a star helps other people find it.
 

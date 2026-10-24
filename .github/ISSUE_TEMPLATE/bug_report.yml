@@ -1,0 +1,36 @@
+name: Bug report
+description: Something went wrong while checking, packing or resuming
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! If nestzip deleted a file that isn't in the archive, or touched anything outside the folder, please [report it privately](https://github.com/YakuR11/nestzip/security/advisories/new) instead.
+  - type: input
+    id: version
+    attributes:
+      label: nestzip version
+      description: The output of `nestzip --version`
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System and filesystem
+      placeholder: "Windows 11, NTFS / Ubuntu 24.04, ext4 / macOS 15, APFS"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and output
+      description: The exact command you ran and everything it printed.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
