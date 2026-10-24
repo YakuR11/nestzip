@@ -26,7 +26,7 @@ if os.name == "nt":
 else:
     import fcntl
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 SIDECAR = ".nestzip"  # next to the archive: a copy of its last known-good central directory
 SIDECAR_HEADER = struct.Struct("<8sQI")  # magic, where the central directory starts, CRC-32 of the copy
@@ -505,9 +505,29 @@ def run(args, folder, real_folder, archive):
     print(f"Done: {archive} ({human(os.path.getsize(archive))}) in {duration(time.monotonic() - started)}")
 
 
+def interactive():
+    """Started with no arguments, e.g. nestzip.exe double-clicked: ask for the folder instead."""
+    print(f"nestzip {__version__}: zip a folder that doesn't fit twice on your disk.")
+    print("Each file is deleted once it is safely in the archive.\n")
+    try:
+        folder = input("Drag a folder into this window, or type its path, then press Enter:\n> ")
+        folder = folder.strip().strip("\"'")  # dragging a path with spaces adds quotes
+        if folder:
+            main(["pack", folder])
+    except SystemExit as stop:
+        if isinstance(stop.code, str):
+            print(stop.code, file=sys.stderr)
+    except (KeyboardInterrupt, EOFError):
+        return
+    with contextlib.suppress(KeyboardInterrupt, EOFError):
+        input("\nPress Enter to close.")  # a double-clicked window would vanish before it could be read
+
+
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")  # a file name the console can't show must not stop a run
+    if argv is None and len(sys.argv) == 1 and sys.stdin and sys.stdin.isatty():
+        return interactive()
     args = parse_args(argv)
     folder, real_folder, archive = resolve_paths(args)
     try:

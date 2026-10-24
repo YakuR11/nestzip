@@ -115,6 +115,20 @@ class NestzipTest(unittest.TestCase):
         self.assertTrue(os.path.isdir(os.path.join(self.src, "empty", "dir")))
         self.assertFalse(os.path.exists(self.arc + nestzip.SIDECAR))
 
+    def test_double_click_asks_for_the_folder(self):
+        """No arguments: the folder is dragged in (with quotes), confirmed, packed, then Enter closes."""
+        answers = iter([f'"{self.src}"', "y", ""])
+        with mock.patch("builtins.input", lambda prompt="": next(answers)):
+            nestzip.interactive()
+        self.assert_finished()
+        self.assertIsNone(next(answers, None), "the window must wait for Enter before closing")
+
+    def test_double_click_then_no_changes_nothing(self):
+        answers = iter([self.src, "n", ""])
+        with mock.patch("builtins.input", lambda prompt="": next(answers)):
+            nestzip.interactive()
+        self.assertEqual(os.listdir(self.tmp.name), ["data"])
+
     def test_progress_and_duration(self):
         self.assertEqual(nestzip.duration(12.44), "12.4 s")
         self.assertEqual(nestzip.duration(125), "2 min 05 s")

@@ -2,6 +2,10 @@
 
 Versions follow [semantic versioning](https://semver.org).
 
+## 1.2.1 - 2026-10-24
+
+- **Double-click works**: started with no arguments, as when `nestzip.exe` is double-clicked, nestzip asks for the folder (drag it into the window), shows whether it fits, asks before packing, and waits for Enter before closing. It used to print a usage error and nothing else.
+
 ## 1.2.0 - 2026-10-24
 
 - **Windows**: every release now has a standalone `nestzip.exe`, no Python needed. It is built by GitHub Actions from the tagged commit, smoke-tested, and comes with a build attestation: `gh attestation verify nestzip.exe --repo YakuR11/nestzip`.

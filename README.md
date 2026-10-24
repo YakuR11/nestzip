@@ -33,7 +33,9 @@ It's the reverse of [HatchZip](https://github.com/xevrion/hatchzip), which does 
 
 ## Quick start
 
-**Windows, no Python needed:** download [`nestzip.exe`](https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe), then open a terminal in your Downloads folder and run it:
+**Windows, no Python needed:** download [`nestzip.exe`](https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe) and double-click it. Drag the folder to pack into the window and press Enter: nestzip shows whether it fits and asks before changing anything.
+
+From a terminal, the exe takes the same commands as below:
 
 ```
 .\nestzip.exe check D:\Backups     # will it fit? changes nothing
