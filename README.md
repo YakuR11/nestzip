@@ -104,7 +104,7 @@ A zip file is a list of entries followed by an index (the central directory) at 
 
 1200 files, 285.6 MB (two thirds random data, one third text), `--batch 64MB`: packed in 10 to 15 s into a 191.7 MB archive, every file byte-identical, on Windows 11 with an AMD Ryzen 9 5900HX and an NVMe SSD.
 
-Crash safety: the process was killed (`TerminateProcess`, `SIGKILL`) at random moments until each run finished, 400 files and 5 empty folders per run. That was 463 kills over 18 runs on Windows and 3315 kills over 14 runs on Linux (Python 3.10 and 3.15), and every entry came out byte-identical each time.
+Crash safety: the process was killed (`TerminateProcess`, `SIGKILL`) at random moments until each run finished, 400 files and 5 empty folders per run. That was 463 kills over 18 runs on Windows and 4562 kills over 16 runs on Linux (Python 3.10 and 3.15), and every entry came out byte-identical each time.
 
 ## How this project was made
 
