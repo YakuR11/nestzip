@@ -18,6 +18,11 @@
   <img src="docs/demo.svg" width="760" alt="nestzip packs a 285.6 MB folder in 5 batches. A normal zip needs room for the files and the archive at the same time; nestzip deletes each batch of originals once it is safely in the archive.">
 </p>
 
+<p align="center">
+  <a href="https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe"><strong>Download nestzip.exe for Windows</strong></a> (no Python needed)
+  &nbsp;·&nbsp; <code>pipx install git+https://github.com/YakuR11/nestzip</code> on any system
+</p>
+
 ## Why
 
 Your disk is almost full and you want to zip a big folder to free some space. 7-Zip, WinRAR and `zip` all need the originals **and** the finished archive on disk at the same time, so a 200 GB folder needs about 200 GB of free space before you can save anything. If you don't have it, you're stuck.
@@ -28,15 +33,24 @@ It's the reverse of [HatchZip](https://github.com/xevrion/hatchzip), which does 
 
 ## Quick start
 
-One file, Python 3.10 or newer, no dependencies.
+**Windows, no Python needed:** download [`nestzip.exe`](https://github.com/YakuR11/nestzip/releases/latest/download/nestzip.exe), then open a terminal in your Downloads folder and run it:
+
+```
+.\nestzip.exe check D:\Backups     # will it fit? changes nothing
+.\nestzip.exe pack D:\Backups      # -> D:\Backups.zip, D:\Backups is gone at the end
+```
+
+The exe isn't code-signed yet, so Windows may show "Windows protected your PC": choose **More info**, then **Run anyway**. Every exe is built by GitHub Actions from the tagged source, and you can check that with `gh attestation verify nestzip.exe --repo YakuR11/nestzip`.
+
+**Any system with Python 3.10 or newer** (one file, no dependencies):
 
 ```
 pipx install git+https://github.com/YakuR11/nestzip
-nestzip check MyFolder     # will it fit? changes nothing
-nestzip pack MyFolder      # -> MyFolder.zip, MyFolder is gone at the end
+nestzip check MyFolder
+nestzip pack MyFolder
 ```
 
-No pipx? Clone the repo and run `python nestzip.py` instead of `nestzip`.
+No pipx? Clone the repo and run `python nestzip.py` instead of `nestzip`. What changed in each version is in the [CHANGELOG](CHANGELOG.md).
 
 ## Usage
 
@@ -45,6 +59,7 @@ nestzip check MyFolder                  # can it fit? changes nothing
 nestzip pack MyFolder                   # asks before starting, then packs
 nestzip pack MyFolder -o D:\Archives\my.zip
 nestzip pack Videos --store             # no compression, much faster for videos and photos
+nestzip pack Project --exclude node_modules --exclude "*.tmp"   # leave those alone
 ```
 
 | Option | Effect |
@@ -53,6 +68,7 @@ nestzip pack Videos --store             # no compression, much faster for videos
 | `--batch <size>` | How much is packed before each delete step. Default `256MB`. Bigger is faster, smaller needs less space. |
 | `--keep-free <size>` | Free space nestzip never uses. Default `1GB`. |
 | `--store` | No compression. |
+| `--exclude <pattern>` | Leave matching files and folders alone: not packed, not deleted. Matches the name or the path inside the folder, like `*.tmp`, `node_modules` or `cache/*`. Repeatable. |
 | `-y, --yes` | No confirmation prompt (`pack` only). |
 
 Sizes are written like `512MB`, `1.5G` or `0`.
@@ -102,7 +118,7 @@ A zip file is a list of entries followed by an index (the central directory) at 
 
 ## Measured
 
-1200 files, 285.6 MB (two thirds random data, one third text), `--batch 64MB`: packed in 10 to 15 s into a 191.7 MB archive, every file byte-identical, on Windows 11 with an AMD Ryzen 9 5900HX and an NVMe SSD.
+1200 files, 285.6 MB (two thirds random data, one third text), `--batch 64MB`: packed in 10 to 20 s over several runs into a 191.7 MB archive, every file byte-identical, on Windows 11 with an AMD Ryzen 9 5900HX and an NVMe SSD.
 
 Crash safety: the process was killed (`TerminateProcess`, `SIGKILL`) at random moments until each run finished, 400 files and 5 empty folders per run. That was 463 kills over 18 runs on Windows and 4562 kills over 16 runs on Linux (Python 3.10 and 3.15), and every entry came out byte-identical each time.
 
@@ -132,7 +148,7 @@ C'est mon premier projet GitHub. L'idée vient de [HatchZip](https://github.com/
 python -m unittest -v
 ```
 
-Covers a full pack, a power cut in the middle of a batch, kills while deleting and right after starting, a file edited between two runs, a disk that's too full, a damaged sidecar, two runs at once, the source folder moved away mid-run, links and junctions pointing outside the folder, links planted next to the archive, and files dated 1970. CI runs them on Windows, macOS and Linux.
+Covers a full pack, a power cut in the middle of a batch, kills while deleting and right after starting, a file edited between two runs, a disk that's too full, a damaged sidecar, two runs at once, the source folder moved away mid-run, links and junctions pointing outside the folder, links planted next to the archive, files dated 1970, and `--exclude`. CI runs them on Windows, macOS and Linux.
 
 ## Contributing
 

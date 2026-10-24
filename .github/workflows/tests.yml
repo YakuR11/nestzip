@@ -2,7 +2,9 @@ name: tests
 
 on:
   push:
+    branches: ["**"]  # tags go through release.yml, which runs these tests first
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read

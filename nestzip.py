@@ -9,12 +9,14 @@ Run the same command again after a crash, a power cut or Ctrl+C: it resumes.
 """
 import argparse
 import contextlib
+import fnmatch
 import os
 import re
 import shutil
 import stat
 import struct
 import sys
+import time
 import zipfile
 import zlib
 from typing import NamedTuple
@@ -24,7 +26,7 @@ if os.name == "nt":
 else:
     import fcntl
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 SIDECAR = ".nestzip"  # next to the archive: a copy of its last known-good central directory
 SIDECAR_HEADER = struct.Struct("<8sQI")  # magic, where the central directory starts, CRC-32 of the copy
@@ -66,6 +68,24 @@ def human(n):
         n /= 1024
 
 
+def duration(seconds):
+    """12.4 s, 2 min 05 s, 1 h 03 min."""
+    if seconds < 60:
+        return f"{seconds:.1f} s"
+    minutes, seconds = divmod(round(seconds), 60)
+    if minutes < 60:
+        return f"{minutes} min {seconds:02d} s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} h {minutes:02d} min"
+
+
+def progress(done, total, elapsed):
+    """', 45% done, about 2 min 05 s left', or nothing before there's a rate to go by."""
+    if not done or done >= total:
+        return ""
+    return f", {100 * done // total}% done, about {duration(elapsed * (total - done) / done)} left"
+
+
 def flush_to_disk(f):
     f.flush()
     if sys.platform == "darwin":  # a plain fsync stops at the drive's cache on macOS
@@ -102,7 +122,13 @@ def is_inside(path, folder):
     return os.path.normcase(common) == os.path.normcase(folder)
 
 
-def scan(folder):
+def is_excluded(name, patterns):
+    """True if the name in the archive, or only its last part, matches an --exclude pattern."""
+    last = name.rstrip("/").rsplit("/", 1)[-1]
+    return any(fnmatch.fnmatch(name, p) or fnmatch.fnmatch(last, p) for p in patterns)
+
+
+def scan(folder, exclude=()):
     """Walk the folder without ever going through a link.
 
     Returns the items to pack, what is left alone (with the reason), and every
@@ -130,11 +156,16 @@ def scan(folder):
             if is_link(path):  # links can point outside the folder: never follow them
                 dirs.remove(d)
                 skipped.append((path, "link"))
+            elif is_excluded(prefix + d, exclude):
+                dirs.remove(d)
+                skipped.append((path, "excluded"))
 
         for n in names:
             path = os.path.join(root, n)
             if is_link(path) or not os.path.isfile(path):
                 skipped.append((path, "link or special file"))
+            elif is_excluded(prefix + n, exclude):
+                skipped.append((path, "excluded"))
             elif problem := name_problem(prefix + n):
                 skipped.append((path, problem))
             else:
@@ -376,6 +407,10 @@ def parse_args(argv):
         cmd.add_argument("--batch", type=parse_size, default="256MB", help="data packed before each delete step (default 256MB)")
         cmd.add_argument("--keep-free", type=parse_size, default="1GB", help="free space never used (default 1GB)")
         cmd.add_argument("--store", action="store_true", help="no compression (fast, for videos and photos)")
+        cmd.add_argument(
+            "--exclude", action="append", default=[], metavar="PATTERN",
+            help='leave matching files and folders alone, e.g. "*.tmp" or "node_modules" (repeatable)',
+        )
         if name == "pack":
             cmd.add_argument("-y", "--yes", action="store_true", help="don't ask for confirmation")
     return parser.parse_args(argv)
@@ -418,7 +453,7 @@ def run(args, folder, real_folder, archive):
     if resuming:
         restore_archive(archive)  # check needs it too: a crash can leave a half-written batch
         print(f"Resuming {archive}")
-    items, skipped, folders = scan(folder)
+    items, skipped, folders = scan(folder, args.exclude)
     already_packed = []
     if resuming:
         items, already_packed = sort_out_resumed(archive, items)
@@ -440,6 +475,7 @@ def run(args, folder, real_folder, archive):
         if answer.strip().lower() != "y":
             sys.exit(1)
 
+    started = time.monotonic()
     if resuming:
         with zipfile.ZipFile(archive) as zf:
             for item in already_packed:
@@ -454,15 +490,19 @@ def run(args, folder, real_folder, archive):
         save_sidecar(archive)
 
     todo = list(batches(items, args.batch))
+    total, done = sum(item.size for item in items), 0
     for i, batch in enumerate(todo, 1):
         commit(archive, batch, method, real_folder)
-        print(f"  [{i}/{len(todo)}] packed {len(batch)} items, {human(sum(item.size for item in batch))} freed")
+        size = sum(item.size for item in batch)
+        done += size
+        elapsed = time.monotonic() - started
+        print(f"  [{i}/{len(todo)}] packed {len(batch)} items, {human(size)} freed{progress(done, total, elapsed)}")
 
     for path in reversed(folders):  # children before their parents
         with contextlib.suppress(OSError):
             os.rmdir(path)  # only succeeds on folders we emptied
     os.remove(sidecar)
-    print(f"Done: {archive} ({human(os.path.getsize(archive))})")
+    print(f"Done: {archive} ({human(os.path.getsize(archive))}) in {duration(time.monotonic() - started)}")
 
 
 def main(argv=None):

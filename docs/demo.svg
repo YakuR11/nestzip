@@ -55,14 +55,14 @@
   <text x="24" y="92" class="line" style="animation-delay:1s">C:\Users\me\Backups: 1200 items, 285.6 MB</text>
   <text x="24" y="114" class="line dim" style="animation-delay:1.3s">  a normal zip needs  386.9 MB free</text>
   <text x="24" y="136" class="line" style="animation-delay:1.6s">  nestzip needs       166.6 MB free (largest batch 64.3 MB, 100.0 MB kept free)</text>
-  <text x="24" y="158" class="line dim" style="animation-delay:1.9s">  available           71.8 GB</text>
+  <text x="24" y="158" class="line dim" style="animation-delay:1.9s">  available           74.3 GB</text>
   <text x="24" y="184" class="line" style="animation-delay:2.6s">Pack and delete the originals as they are saved? [y/N] y</text>
-  <text x="24" y="210" class="line" style="animation-delay:4.1s">  [1/5] packed 272 items, 63.9 MB freed</text>
-  <text x="24" y="232" class="line" style="animation-delay:4.9s">  [2/5] packed 268 items, 63.9 MB freed</text>
-  <text x="24" y="254" class="line" style="animation-delay:5.7s">  [3/5] packed 266 items, 64.0 MB freed</text>
-  <text x="24" y="276" class="line" style="animation-delay:6.5s">  [4/5] packed 269 items, 63.9 MB freed</text>
+  <text x="24" y="210" class="line" style="animation-delay:4.1s">  [1/5] packed 272 items, 63.9 MB freed, 22% done, about 17.0 s left</text>
+  <text x="24" y="232" class="line" style="animation-delay:4.9s">  [2/5] packed 268 items, 63.9 MB freed, 44% done, about 12.1 s left</text>
+  <text x="24" y="254" class="line" style="animation-delay:5.7s">  [3/5] packed 266 items, 64.0 MB freed, 67% done, about 5.8 s left</text>
+  <text x="24" y="276" class="line" style="animation-delay:6.5s">  [4/5] packed 269 items, 63.9 MB freed, 89% done, about 1.9 s left</text>
   <text x="24" y="298" class="line" style="animation-delay:7.3s">  [5/5] packed 125 items, 29.9 MB freed</text>
-  <text x="24" y="324" class="line ok" style="animation-delay:7.7s">Done: C:\Users\me\Backups.zip (191.7 MB)</text>
+  <text x="24" y="324" class="line ok" style="animation-delay:7.7s">Done: C:\Users\me\Backups.zip (191.7 MB) in 19.6 s</text>
 
   <line x1="24" y1="350" x2="836" y2="350" stroke="#30363d"/>
   <text x="24" y="378" class="label">Disk space used while packing</text>

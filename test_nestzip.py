@@ -101,6 +101,28 @@ class NestzipTest(unittest.TestCase):
         self.assert_exits(0, "check", self.src, "--keep-free", "0")
         self.assertEqual(os.listdir(self.tmp.name), ["data"])
 
+    def test_exclude_leaves_files_alone(self):
+        self.pack("--exclude", "*.bin", "--exclude", "empty")
+        with zipfile.ZipFile(self.arc) as z:
+            names = z.namelist()
+            for rel, data in self.files.items():
+                if rel.endswith(".bin"):
+                    self.assertNotIn(rel, names)
+                    self.assertTrue(os.path.exists(os.path.join(self.src, *rel.split("/"))), rel)
+                else:
+                    self.assertEqual(z.read(rel), data, rel)
+        self.assertNotIn("empty/dir/", names)
+        self.assertTrue(os.path.isdir(os.path.join(self.src, "empty", "dir")))
+        self.assertFalse(os.path.exists(self.arc + nestzip.SIDECAR))
+
+    def test_progress_and_duration(self):
+        self.assertEqual(nestzip.duration(12.44), "12.4 s")
+        self.assertEqual(nestzip.duration(125), "2 min 05 s")
+        self.assertEqual(nestzip.duration(3780), "1 h 03 min")
+        self.assertEqual(nestzip.progress(0, 100, 5), "")
+        self.assertEqual(nestzip.progress(100, 100, 5), "")
+        self.assertEqual(nestzip.progress(25, 100, 10), ", 25% done, about 30.0 s left")
+
     def test_files_dated_before_1980(self):
         os.utime(os.path.join(self.src, "f0.txt"), (0, 0))  # 1970, common after a bad copy
         self.pack()
