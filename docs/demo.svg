@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 860 520" width="860" height="520" role="img" aria-label="nestzip packs a 285.6 MB folder in 5 batches. A normal zip needs room for the files and the archive at the same time; nestzip deletes each batch of originals once it is safely in the archive.">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; fill: #c9d1d9; white-space: pre; }
+    .dim { fill: #8b949e; }
+    .ok { fill: #3fb950; }
+    .prompt { fill: #58a6ff; }
+    .label { font-size: 13px; fill: #8b949e; }
+    .line { opacity: 0; animation: show .25s ease-out both; }
+    @keyframes show { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .grow, .shrink { transform-box: fill-box; transform-origin: left center; }
+    .zip-archive { animation: zipArchive 4s linear 3.4s both; }
+    .zip-files { animation: fade .6s ease-in 7.8s both; }
+    .nz-archive { animation: nzArchive 4s linear 3.4s both; }
+    .nz-files-move { animation: nzMove 4s linear 3.4s both; }
+    .nz-files { animation: nzFiles 4s linear 3.4s both; }
+    @keyframes zipArchive { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes fade { to { opacity: .18; } }
+    @keyframes nzArchive {
+      0% { transform: scaleX(0); }
+      7.5%, 20% { transform: scaleX(.2237); }
+      27.5%, 40% { transform: scaleX(.4475); }
+      47.5%, 60% { transform: scaleX(.6716); }
+      67.5%, 80% { transform: scaleX(.8953); }
+      87.5%, 100% { transform: scaleX(1); }
+    }
+    @keyframes nzMove {
+      0% { transform: translateX(0); }
+      7.5%, 20% { transform: translateX(44.96px); }
+      27.5%, 40% { transform: translateX(89.95px); }
+      47.5%, 60% { transform: translateX(134.99px); }
+      67.5%, 80% { transform: translateX(179.96px); }
+      87.5%, 100% { transform: translateX(201px); }
+    }
+    @keyframes nzFiles {
+      0%, 10% { transform: scaleX(1); }
+      17.5%, 30% { transform: scaleX(.7763); }
+      37.5%, 50% { transform: scaleX(.5525); }
+      57.5%, 70% { transform: scaleX(.3284); }
+      77.5%, 90% { transform: scaleX(.1047); }
+      97.5%, 100% { transform: scaleX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .line, .zip-archive, .nz-archive, .nz-files-move, .nz-files, .zip-files { animation-duration: 0s; animation-delay: 0s; }
+    }
+  </style>
+
+  <rect width="860" height="520" rx="12" fill="#0d1117"/>
+  <rect x=".5" y=".5" width="859" height="519" rx="12" fill="none" stroke="#30363d"/>
+  <circle cx="24" cy="22" r="6" fill="#ff5f56"/>
+  <circle cx="44" cy="22" r="6" fill="#ffbd2e"/>
+  <circle cx="64" cy="22" r="6" fill="#27c93f"/>
+
+  <text x="24" y="66" class="line" style="animation-delay:.2s"><tspan class="prompt">PS C:\Users\me&gt;</tspan> nestzip pack Backups --batch 64MB --keep-free 100MB</text>
+  <text x="24" y="92" class="line" style="animation-delay:1s">C:\Users\me\Backups: 1200 items, 285.6 MB</text>
+  <text x="24" y="114" class="line dim" style="animation-delay:1.3s">  a normal zip needs  386.9 MB free</text>
+  <text x="24" y="136" class="line" style="animation-delay:1.6s">  nestzip needs       166.6 MB free (largest batch 64.3 MB, 100.0 MB kept free)</text>
+  <text x="24" y="158" class="line dim" style="animation-delay:1.9s">  available           71.8 GB</text>
+  <text x="24" y="184" class="line" style="animation-delay:2.6s">Pack and delete the originals as they are saved? [y/N] y</text>
+  <text x="24" y="210" class="line" style="animation-delay:4.1s">  [1/5] packed 272 items, 63.9 MB freed</text>
+  <text x="24" y="232" class="line" style="animation-delay:4.9s">  [2/5] packed 268 items, 63.9 MB freed</text>
+  <text x="24" y="254" class="line" style="animation-delay:5.7s">  [3/5] packed 266 items, 64.0 MB freed</text>
+  <text x="24" y="276" class="line" style="animation-delay:6.5s">  [4/5] packed 269 items, 63.9 MB freed</text>
+  <text x="24" y="298" class="line" style="animation-delay:7.3s">  [5/5] packed 125 items, 29.9 MB freed</text>
+  <text x="24" y="324" class="line ok" style="animation-delay:7.7s">Done: C:\Users\me\Backups.zip (191.7 MB)</text>
+
+  <line x1="24" y1="350" x2="836" y2="350" stroke="#30363d"/>
+  <text x="24" y="378" class="label">Disk space used while packing</text>
+  <rect x="560" y="366" width="12" height="12" rx="2" fill="#58a6ff"/>
+  <text x="580" y="377" class="label">your files</text>
+  <rect x="680" y="366" width="12" height="12" rx="2" fill="#f0883e"/>
+  <text x="700" y="377" class="label">the archive</text>
+
+  <text x="24" y="420">zip, 7-Zip</text>
+  <rect class="zip-files" x="150" y="404" width="300" height="22" rx="3" fill="#58a6ff"/>
+  <rect class="grow zip-archive" x="450" y="404" width="201" height="22" rx="3" fill="#f0883e"/>
+  <text x="664" y="420" class="label">both at once</text>
+
+  <text x="24" y="470" class="ok">nestzip</text>
+  <rect class="grow nz-archive" x="150" y="454" width="201" height="22" rx="3" fill="#f0883e"/>
+  <g class="nz-files-move">
+    <rect class="shrink nz-files" x="150" y="454" width="300" height="22" rx="3" fill="#58a6ff"/>
+  </g>
+  <text x="664" y="470" class="label">one batch at a time</text>
+  <text x="24" y="504" class="label">Real run: 1200 files, 285.6 MB. Bars to scale.</text>
+</svg>
